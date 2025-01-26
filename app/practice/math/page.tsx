@@ -5,19 +5,18 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Brain, Loader2 } from "lucide-react"
+import { ArrowLeft, Calculator, AlertCircle, HelpCircle, Sparkles } from "lucide-react"
 import { DifficultyBadge } from "@/components/difficulty-badge"
 import { QuizResults } from "@/components/quiz-results"
 import { Scoreboard } from "@/components/scoreboard"
-import { QuizTimer } from "@/components/quiz-timer"
-import { HintCard } from "@/components/hint-card"
+import { Difficulty } from "@/types/questions"
 import { generateMathQuestions } from "@/lib/math-questions"
 
 interface Question {
   question: string
   correct_answer: string
   incorrect_answers: string[]
-  difficulty: "easy" | "medium" | "hard"
+  difficulty: Difficulty
   grade: number
   hint: string
 }
@@ -26,46 +25,57 @@ export default function MathPracticePage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [correctAnswers, setCorrectAnswers] = useState(0)
   const [wrongAnswers, setWrongAnswers] = useState(0)
   const [showResults, setShowResults] = useState(false)
+  const [showHint, setShowHint] = useState(false)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [isChecking, setIsChecking] = useState(false)
-  const [hintsLeft, setHintsLeft] = useState(3)
-  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [questionAnswers, setQuestionAnswers] = useState<string[][]>([])
 
   useEffect(() => {
     fetchQuestions()
   }, [])
 
-  useEffect(() => {
-    if (questions.length > 0 && !showResults) {
-      setIsTimerRunning(true)
-    } else {
-      setIsTimerRunning(false)
+  function shuffleAnswers(correct: string, incorrect: string[]) {
+    const allAnswers = [correct, ...incorrect]
+    // Fisher-Yates shuffle
+    for (let i = allAnswers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]]
     }
-  }, [questions.length, showResults])
+    return allAnswers
+  }
 
   function fetchQuestions() {
     try {
       setIsLoading(true)
+      setError("")
       const newQuestions = generateMathQuestions(10)
       setQuestions(newQuestions)
-      setHintsLeft(3)
-      setIsTimerRunning(true)
-    } catch (error) {
-      console.error("Error generating questions:", error)
+      
+      // Pre-generate all shuffled answers
+      const shuffledAnswers = newQuestions.map(q => 
+        shuffleAnswers(q.correct_answer, q.incorrect_answers)
+      )
+      setQuestionAnswers(shuffledAnswers)
+      
+      setCurrentQuestionIndex(0)
+      setScore(0)
+      setStreak(0)
+      setCorrectAnswers(0)
+      setWrongAnswers(0)
+      setShowResults(false)
+      setShowHint(false)
+      setSelectedAnswer(null)
+      setIsChecking(false)
+    } catch (err) {
+      setError("Failed to generate questions. Please try again.")
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  function handleUseHint() {
-    if (hintsLeft > 0) {
-      setHintsLeft((prev) => prev - 1)
-      setScore((prev) => Math.max(0, prev - 50)) // Deduct 50 points for using a hint
     }
   }
 
@@ -74,158 +84,141 @@ export default function MathPracticePage() {
     setIsChecking(true)
     setSelectedAnswer(answer)
 
-    // Simulate a small delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 500))
-
     const currentQuestion = questions[currentQuestionIndex]
-    if (answer === currentQuestion.correct_answer) {
-      setScore((prev) => prev + (streak + 1) * 10)
-      setStreak((prev) => prev + 1)
-      setCorrectAnswers((prev) => prev + 1)
+    const isCorrect = answer === currentQuestion.correct_answer
+
+    // Add delay to show the selected answer
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    if (isCorrect) {
+      const newStreak = streak + 1
+      setStreak(newStreak)
+      setScore(prev => prev + (10 * (1 + Math.floor(newStreak / 3))))
+      setCorrectAnswers(prev => prev + 1)
     } else {
       setStreak(0)
-      setWrongAnswers((prev) => prev + 1)
+      setWrongAnswers(prev => prev + 1)
     }
 
-    // Wait a bit before moving to next question
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSelectedAnswer(null)
     setIsChecking(false)
+    setShowHint(false)
 
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex((prev) => prev + 1)
+      setCurrentQuestionIndex(prev => prev + 1)
+      setSelectedAnswer(null)
     } else {
       setShowResults(true)
-      setIsTimerRunning(false)
     }
-  }
-
-  function handleRestart() {
-    setCurrentQuestionIndex(0)
-    setScore(0)
-    setStreak(0)
-    setCorrectAnswers(0)
-    setWrongAnswers(0)
-    setShowResults(false)
-    setSelectedAnswer(null)
-    setIsChecking(false)
-    setHintsLeft(3)
-    fetchQuestions()
   }
 
   if (isLoading) {
     return (
-      <div className="container flex items-center justify-center py-8 md:py-12">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <p className="text-lg text-muted-foreground">Loading questions...</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Calculator className="mx-auto mb-4 h-12 w-12 animate-pulse text-muted-foreground" />
+          <p className="text-lg font-medium">Loading questions...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-lg">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
+              <h2 className="mb-2 text-lg font-medium">{error}</h2>
+              <Button onClick={fetchQuestions}>Try Again</Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   if (showResults) {
     return (
-      <div className="container py-8 md:py-12">
-        <div className="mx-auto max-w-4xl">
-          <QuizResults
-            score={score}
-            totalQuestions={questions.length}
-            correctAnswers={correctAnswers}
-            wrongAnswers={wrongAnswers}
-            onRestart={handleRestart}
-          />
-        </div>
-      </div>
+      <QuizResults
+        score={score}
+        correctAnswers={correctAnswers}
+        wrongAnswers={wrongAnswers}
+        onRetry={fetchQuestions}
+      />
     )
   }
 
   const currentQuestion = questions[currentQuestionIndex]
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
-  const allAnswers = [
-    currentQuestion.correct_answer,
-    ...currentQuestion.incorrect_answers,
-  ].sort(() => Math.random() - 0.5)
 
   return (
     <div className="container py-8 md:py-12">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col gap-8 lg:flex-row">
-          <div className="w-full space-y-8 lg:w-3/4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/" className="flex items-center gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    Back
-                  </Link>
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Brain className="h-6 w-6 text-primary" />
-                  <h1 className="text-3xl font-bold">Mathematics Practice</h1>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Progress value={progress} className="w-[200px]" />
-                <p className="text-sm text-muted-foreground text-center">
-                  Question {currentQuestionIndex + 1} of {questions.length}
+      <div className="mx-auto max-w-2xl space-y-8">
+        <div className="flex items-center justify-between">
+          <Link href="/practice">
+            <Button variant="ghost" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </Link>
+          <Scoreboard score={score} streak={streak} />
+        </div>
+
+        <Progress value={progress} className="h-2" />
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <DifficultyBadge difficulty={currentQuestion.difficulty} />
+              <span className="text-sm text-muted-foreground">
+                Question {currentQuestionIndex + 1} of {questions.length}
+              </span>
+            </div>
+            <CardTitle className="mt-4 text-xl font-bold">
+              {currentQuestion.question}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {questionAnswers[currentQuestionIndex]?.map((answer, index) => (
+              <Button
+                key={index}
+                variant={
+                  selectedAnswer === answer
+                    ? answer === currentQuestion.correct_answer
+                      ? "success"
+                      : "destructive"
+                    : "outline"
+                }
+                className="w-full justify-start py-8 text-left text-lg"
+                disabled={isChecking || selectedAnswer !== null}
+                onClick={() => handleAnswer(answer)}
+              >
+                {answer}
+              </Button>
+            ))}
+
+            {!showHint && !selectedAnswer && (
+              <Button
+                variant="ghost"
+                className="mt-4 w-full gap-2"
+                onClick={() => setShowHint(true)}
+              >
+                <HelpCircle className="h-4 w-4" />
+                Show Hint
+              </Button>
+            )}
+
+            {showHint && !selectedAnswer && (
+              <div className="mt-4 rounded-lg border bg-muted/50 p-4">
+                <p className="flex items-start gap-2 text-sm">
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                  {currentQuestion.hint}
                 </p>
               </div>
-            </div>
-
-            <Card className="overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Grade {currentQuestion.grade} Mathematics</CardTitle>
-                <DifficultyBadge difficulty={currentQuestion.difficulty} />
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="rounded-lg bg-muted p-6">
-                  <p className="text-xl font-medium">{currentQuestion.question}</p>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {allAnswers.map((answer, index) => (
-                    <Button
-                      key={index}
-                      variant={selectedAnswer === answer 
-                        ? answer === currentQuestion.correct_answer 
-                          ? "default" 
-                          : "destructive"
-                        : "outline"
-                      }
-                      className={`h-12 text-lg transition-colors ${
-                        isChecking ? "cursor-not-allowed" : ""
-                      } ${
-                        selectedAnswer === answer && answer === currentQuestion.correct_answer
-                          ? "bg-green-500 hover:bg-green-500"
-                          : ""
-                      }`}
-                      onClick={() => handleAnswer(answer)}
-                      disabled={isChecking}
-                    >
-                      {answer}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="w-full space-y-4 lg:w-1/4">
-            <Scoreboard
-              score={score}
-              streak={streak}
-              correctAnswers={correctAnswers}
-              wrongAnswers={wrongAnswers}
-              grade={currentQuestion.grade}
-            />
-            <QuizTimer isRunning={isTimerRunning} />
-            <HintCard
-              hint={currentQuestion.hint}
-              hintsLeft={hintsLeft}
-              onUseHint={handleUseHint}
-            />
-          </div>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

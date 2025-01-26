@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { BrainCircuit, CheckCircle2, Fire, Target, Timer } from "lucide-react"
+import { BrainCircuit, CheckCircle2, Flame, Target, Timer } from "lucide-react"
 
 interface DailyGoalsProps {
   goals: {
@@ -76,7 +76,7 @@ export function DailyGoals({ goals }: DailyGoalsProps) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Fire className="h-5 w-5 text-orange-500" />
+                <Flame className="h-5 w-5 text-orange-500" />
                 <p className="font-medium">Streak</p>
               </div>
               <p className="text-sm text-muted-foreground">

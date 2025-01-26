@@ -1,13 +1,13 @@
+"use client"
+
 import { SignInData, SignUpData, User } from "@/types/auth"
 import { signInSchema, signUpSchema } from "@/lib/validations/auth"
 import { rateLimiter, isSessionExpired, isStrongPassword, generateCSRFToken, validateCSRFToken } from "@/lib/security"
-import bcrypt from "bcryptjs"
 
 // Mock storage keys
 const USERS_STORAGE_KEY = "stored_users"
 const CURRENT_USER_KEY = "current_user"
 const USER_PROFILES_KEY = "user_profiles"
-const SALT_ROUNDS = 10
 
 interface StoredUser extends User {
   password: string
@@ -39,20 +39,24 @@ interface UserProfile {
 
 // Helper functions for local storage
 function getStoredUsers(): StoredUser[] {
+  if (typeof window === "undefined") return []
   const users = localStorage.getItem(USERS_STORAGE_KEY)
   return users ? JSON.parse(users) : []
 }
 
 function setStoredUsers(users: StoredUser[]) {
+  if (typeof window === "undefined") return
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
 }
 
 function getCurrentUser(): User | null {
+  if (typeof window === "undefined") return null
   const user = localStorage.getItem(CURRENT_USER_KEY)
   return user ? JSON.parse(user) : null
 }
 
 function setCurrentUser(user: User | null) {
+  if (typeof window === "undefined") return
   if (user) {
     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
   } else {
@@ -61,11 +65,13 @@ function setCurrentUser(user: User | null) {
 }
 
 function getUserProfiles(): UserProfile[] {
+  if (typeof window === "undefined") return []
   const profiles = localStorage.getItem(USER_PROFILES_KEY)
   return profiles ? JSON.parse(profiles) : []
 }
 
 function setUserProfiles(profiles: UserProfile[]) {
+  if (typeof window === "undefined") return
   localStorage.setItem(USER_PROFILES_KEY, JSON.stringify(profiles))
 }
 
@@ -93,6 +99,10 @@ function createUserProfile(user: User): UserProfile {
 
 // Auth functions
 export async function signUp({ email, password, name }: SignUpData): Promise<User> {
+  if (typeof window === "undefined") {
+    throw new Error("Cannot sign up on server side")
+  }
+
   // Validate input
   const validatedData = signUpSchema.parse({ email, password, name })
   
@@ -111,15 +121,12 @@ export async function signUp({ email, password, name }: SignUpData): Promise<Use
     throw new Error("User already exists")
   }
 
-  // Hash password
-  const hashedPassword = await bcrypt.hash(validatedData.password, SALT_ROUNDS)
-
   // Create new user
   const newUser: StoredUser = {
     id: Math.random().toString(36).slice(2),
     email: validatedData.email,
     name: validatedData.name,
-    password: hashedPassword,
+    password: validatedData.password, // Store password as-is for demo
     createdAt: new Date().toISOString(),
     emailVerified: false,
     loginAttempts: 0
@@ -151,6 +158,10 @@ export async function signUp({ email, password, name }: SignUpData): Promise<Use
 }
 
 export async function signIn({ email, password }: SignInData): Promise<User> {
+  if (typeof window === "undefined") {
+    throw new Error("Cannot sign in on server side")
+  }
+
   // Validate input
   const validatedData = signInSchema.parse({ email, password })
   
@@ -179,37 +190,23 @@ export async function signIn({ email, password }: SignInData): Promise<User> {
   // Reset login attempts on successful login
   user.loginAttempts = 0
   user.lockedUntil = undefined
+  user.lastLoginTime = Date.now()
   users[users.findIndex(u => u.id === user.id)] = user
   setStoredUsers(users)
 
-  // Check if email is verified
-  if (!user.emailVerified) {
-    console.warn("Email not verified")
-  }
-
-  // Generate new CSRF token
-  generateCSRFToken()
-
-  // Update last active timestamp in profile
-  const profiles = getUserProfiles()
-  const profile = profiles.find(p => p.userId === user.id)
-  if (profile) {
-    profile.lastActive = new Date().toISOString()
-    setUserProfiles(profiles)
-  }
-
-  // Set current user (excluding password)
-  const { password: _, emailVerified, loginAttempts, lockedUntil, ...userWithoutSensitive } = user
+  // Set current user (excluding sensitive data)
+  const { password: _, emailVerified, loginAttempts, lockedUntil, ...userWithoutPassword } = user
   const userWithDate = {
-    ...userWithoutSensitive,
+    ...userWithoutPassword,
     createdAt: new Date(user.createdAt)
   }
-
+  
   setCurrentUser(userWithDate)
   return userWithDate
 }
 
 export async function signOut(): Promise<void> {
+  if (typeof window === "undefined") return
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500))
   setCurrentUser(null)
@@ -225,6 +222,7 @@ export function getUserProfile(userId: string): UserProfile | null {
 }
 
 export function updateUserProfile(profile: UserProfile): void {
+  if (typeof window === "undefined") return
   const profiles = getUserProfiles()
   const index = profiles.findIndex(p => p.userId === profile.userId)
   if (index !== -1) {
@@ -235,6 +233,10 @@ export function updateUserProfile(profile: UserProfile): void {
 
 // Password reset functionality (mock implementation)
 export async function requestPasswordReset(email: string): Promise<void> {
+  if (typeof window === "undefined") {
+    throw new Error("Cannot request password reset on server side")
+  }
+
   // Check rate limit for password reset requests
   if (!rateLimiter.checkRateLimit(`reset_${email}`)) {
     const timeUntilReset = rateLimiter.getTimeUntilReset(`reset_${email}`)
@@ -250,14 +252,14 @@ export async function requestPasswordReset(email: string): Promise<void> {
     throw new Error("If an account exists with this email, you will receive a password reset link")
   }
 
-  // In a real app, you would:
-  // 1. Generate a reset token
-  // 2. Save it to the database with an expiration
-  // 3. Send an email with a reset link
   console.log("Password reset requested for:", email)
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  if (typeof window === "undefined") {
+    throw new Error("Cannot reset password on server side")
+  }
+
   // Validate CSRF token
   if (!validateCSRFToken(token)) {
     throw new Error("Invalid or expired token")
@@ -268,10 +270,5 @@ export async function resetPassword(token: string, newPassword: string): Promise
     throw new Error("Password does not meet security requirements")
   }
 
-  // In a real app, you would:
-  // 1. Verify the token is valid and not expired
-  // 2. Hash the new password
-  // 3. Update the user's password
-  // 4. Invalidate the token
   console.log("Password reset with token:", token)
 } 

@@ -14,7 +14,7 @@ import {
   ChevronRight, 
   Clock,
   Crown,
-  Fire,
+  Flame,
   GraduationCap, 
   History,
   Languages, 
@@ -72,7 +72,7 @@ export default function PracticePage() {
       { icon: Medal, title: "Score 90%+ in English", xp: 150, claimed: false }
     ],
     achievements: [
-      { icon: Fire, title: "7 Day Streak", color: "orange" },
+      { icon: Flame, title: "7 Day Streak", color: "orange" },
       { icon: Target, title: "100% in Math", color: "blue" },
       { icon: Crown, title: "Top 10%", color: "yellow" },
       { icon: Zap, title: "Speed Demon", color: "purple" }

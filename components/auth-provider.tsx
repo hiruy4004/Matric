@@ -1,8 +1,8 @@
 "use client"
 
 import React from "react"
-import { AuthContextType, SignInData, SignUpData, User } from "@/types/auth"
-import { signIn, signOut, signUp, getUser, getUserProfile, updateUserProfile } from "@/lib/auth"
+import { AuthContextType, SignInData, SignUpData, User, UserProfile } from "@/types/auth"
+import { signIn, signOut, signInWithGoogle, getUser, getUserProfile, updateUserProfile } from "@/lib/auth"
 
 const AuthContext = React.createContext<AuthContextType | null>(null)
 
@@ -16,7 +16,7 @@ export function useAuth() {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null)
-  const [profile, setProfile] = React.useState<any | null>(null)
+  const [profile, setProfile] = React.useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -51,18 +51,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const handleSignUp = async (data: SignUpData) => {
+  const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true)
       setError(null)
-      const user = await signUp(data)
+      const { user, profile } = await signInWithGoogle()
       setUser(user)
-      const userProfile = getUserProfile(user.id)
-      if (userProfile) {
-        setProfile(userProfile)
-      }
+      setProfile(profile)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create account")
+      setError(err instanceof Error ? err.message : "Failed to sign in with Google")
       throw err
     } finally {
       setIsLoading(false)
@@ -83,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateProfile = (updates: Partial<any>) => {
+  const updateProfile = (updates: Partial<UserProfile>) => {
     if (profile && user) {
       const updatedProfile = { ...profile, ...updates }
       updateUserProfile(updatedProfile)
@@ -99,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         error,
         signIn: handleSignIn,
-        signUp: handleSignUp,
+        signInWithGoogle: handleGoogleSignIn,
         signOut: handleSignOut,
         updateProfile
       }}

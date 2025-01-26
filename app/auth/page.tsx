@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/components/auth-provider"
 import { 
   ArrowLeft, 
@@ -18,12 +19,13 @@ import {
   Sparkles,
   AlertCircle,
   LogIn,
-  Loader2
+  Loader2,
+  Chrome
 } from "lucide-react"
 
 export default function AuthPage() {
   const router = useRouter()
-  const { signIn, signUp, isLoading, error } = useAuth()
+  const { signIn, signInWithGoogle, isLoading, error } = useAuth()
   const [isSignUp, setIsSignUp] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false)
@@ -39,7 +41,7 @@ export default function AuthPage() {
 
     try {
       if (isSignUp) {
-        await signUp({ email, password, name })
+        await signIn({ email, password })
       } else {
         await signIn({ email, password })
       }
@@ -52,6 +54,15 @@ export default function AuthPage() {
       } else {
         setFormError(err.message || "An error occurred")
       }
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle()
+      router.push("/practice")
+    } catch (err: any) {
+      setFormError(err.message || "Failed to sign in with Google")
     }
   }
 
@@ -102,6 +113,28 @@ export default function AuthPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+              >
+                <Chrome className="h-4 w-4" />
+                Continue with Google
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 {isSignUp && (
                   <div className="space-y-2">

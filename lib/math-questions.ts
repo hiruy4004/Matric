@@ -1,3 +1,5 @@
+"use client"
+
 import { Difficulty } from "@/types/questions"
 
 interface MathQuestion {
@@ -16,6 +18,10 @@ function formatNumber(num: number): string {
 
 // Helper function to generate incorrect answers that are close but not equal to the correct answer
 function generateIncorrectAnswers(correctAnswer: number, range: number = 5, count: number = 3): string[] {
+  if (typeof window === "undefined") {
+    return Array(count).fill("0")
+  }
+
   const answers = new Set<string>()
   let attempts = 0
   const maxAttempts = 20
@@ -95,6 +101,17 @@ function getGradeConfig(grade: number) {
 }
 
 function generateBasicQuestion(grade: number): MathQuestion {
+  if (typeof window === "undefined") {
+    return {
+      question: "Loading...",
+      correct_answer: "0",
+      incorrect_answers: ["0", "0", "0"],
+      difficulty: "easy",
+      grade: 1,
+      hint: "Loading..."
+    }
+  }
+
   const config = getGradeConfig(grade)
   const operation = config.operations[Math.floor(Math.random() * config.operations.length)]
   
@@ -177,6 +194,17 @@ function generateBasicQuestion(grade: number): MathQuestion {
 }
 
 function generateWordProblem(grade: number): MathQuestion {
+  if (typeof window === "undefined") {
+    return {
+      question: "Loading...",
+      correct_answer: "0",
+      incorrect_answers: ["0", "0", "0"],
+      difficulty: "easy",
+      grade: 1,
+      hint: "Loading..."
+    }
+  }
+
   const config = getGradeConfig(grade)
   const templates = {
     elementary1: [
@@ -337,6 +365,17 @@ function generateWordProblem(grade: number): MathQuestion {
 }
 
 export function generateMathQuestions(count: number = 10): MathQuestion[] {
+  if (typeof window === "undefined") {
+    return Array(count).fill({
+      question: "Loading...",
+      correct_answer: "0",
+      incorrect_answers: ["0", "0", "0"],
+      difficulty: "easy",
+      grade: 1,
+      hint: "Loading..."
+    })
+  }
+
   const questions: MathQuestion[] = []
   
   for (let i = 0; i < count; i++) {

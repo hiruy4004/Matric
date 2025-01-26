@@ -116,7 +116,7 @@ export default function MathPracticePage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Calculator className="mx-auto mb-4 h-12 w-12 animate-pulse text-muted-foreground" />
-          <p className="text-lg font-medium">Loading questions...</p>
+          <p className="text-lg font-medium text-foreground">Loading questions...</p>
         </div>
       </div>
     )
@@ -129,7 +129,7 @@ export default function MathPracticePage() {
           <CardContent className="pt-6">
             <div className="text-center">
               <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
-              <h2 className="mb-2 text-lg font-medium">{error}</h2>
+              <h2 className="mb-2 text-lg font-medium text-foreground">{error}</h2>
               <Button onClick={fetchQuestions}>Try Again</Button>
             </div>
           </CardContent>
@@ -175,7 +175,7 @@ export default function MathPracticePage() {
                 Question {currentQuestionIndex + 1} of {questions.length}
               </span>
             </div>
-            <CardTitle className="mt-4 text-xl font-bold">
+            <CardTitle className="mt-4 text-xl font-bold text-foreground">
               {currentQuestion.question}
             </CardTitle>
           </CardHeader>
@@ -211,7 +211,7 @@ export default function MathPracticePage() {
 
             {showHint && !selectedAnswer && (
               <div className="mt-4 rounded-lg border bg-muted/50 p-4">
-                <p className="flex items-start gap-2 text-sm">
+                <p className="flex items-start gap-2 text-sm text-foreground">
                   <Sparkles className="h-4 w-4 shrink-0" />
                   {currentQuestion.hint}
                 </p>

@@ -151,72 +151,74 @@ export default function MathPracticePage() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="flex-1 container py-8 md:py-12">
-        <div className="mx-auto max-w-2xl space-y-8">
-          <div className="flex items-center justify-between">
-            <Link href="/practice">
-              <Button variant="ghost" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-            </Link>
-            <Scoreboard score={score} streak={streak} />
-          </div>
-
-          <Progress value={progress} className="h-2" />
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <DifficultyBadge difficulty={currentQuestion.difficulty} />
-                <span className="text-sm text-muted-foreground">
-                  Question {currentQuestionIndex + 1} of {questions.length}
-                </span>
-              </div>
-              <CardTitle className="mt-4 text-xl font-bold text-foreground">
-                {currentQuestion.question}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {questionAnswers[currentQuestionIndex]?.map((answer, index) => (
-                <Button
-                  key={index}
-                  variant={
-                    selectedAnswer === answer
-                      ? answer === currentQuestion.correct_answer
-                        ? "success"
-                        : "destructive"
-                      : "outline"
-                  }
-                  className="w-full justify-start py-8 text-left text-lg"
-                  disabled={isChecking || selectedAnswer !== null}
-                  onClick={() => handleAnswer(answer)}
-                >
-                  {answer}
+      <div className="flex-1 flex flex-col">
+        <div className="container flex-1 py-8 md:py-12">
+          <div className="mx-auto max-w-2xl space-y-8">
+            <div className="flex items-center justify-between">
+              <Link href="/practice">
+                <Button variant="ghost" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
                 </Button>
-              ))}
+              </Link>
+              <Scoreboard score={score} streak={streak} />
+            </div>
 
-              {!showHint && !selectedAnswer && (
-                <Button
-                  variant="ghost"
-                  className="mt-4 w-full gap-2"
-                  onClick={() => setShowHint(true)}
-                >
-                  <HelpCircle className="h-4 w-4" />
-                  Show Hint
-                </Button>
-              )}
+            <Progress value={progress} className="h-2" />
 
-              {showHint && !selectedAnswer && (
-                <div className="mt-4 rounded-lg border bg-muted/50 p-4">
-                  <p className="flex items-start gap-2 text-sm text-foreground">
-                    <Sparkles className="h-4 w-4 shrink-0" />
-                    {currentQuestion.hint}
-                  </p>
+            <Card className="shadow-sm">
+              <CardHeader className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <DifficultyBadge difficulty={currentQuestion.difficulty} />
+                  <span className="text-sm text-muted-foreground">
+                    Question {currentQuestionIndex + 1} of {questions.length}
+                  </span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <CardTitle className="text-xl font-bold text-foreground">
+                  {currentQuestion.question}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {questionAnswers[currentQuestionIndex]?.map((answer, index) => (
+                  <Button
+                    key={index}
+                    variant={
+                      selectedAnswer === answer
+                        ? answer === currentQuestion.correct_answer
+                          ? "success"
+                          : "destructive"
+                        : "outline"
+                    }
+                    className="w-full justify-start py-8 text-left text-lg transition-all"
+                    disabled={isChecking || selectedAnswer !== null}
+                    onClick={() => handleAnswer(answer)}
+                  >
+                    {answer}
+                  </Button>
+                ))}
+
+                {!showHint && !selectedAnswer && (
+                  <Button
+                    variant="ghost"
+                    className="mt-4 w-full gap-2 hover:bg-muted/50"
+                    onClick={() => setShowHint(true)}
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    Show Hint
+                  </Button>
+                )}
+
+                {showHint && !selectedAnswer && (
+                  <div className="mt-4 rounded-lg border bg-muted/50 p-4">
+                    <p className="flex items-start gap-2 text-sm text-foreground">
+                      <Sparkles className="h-4 w-4 shrink-0" />
+                      {currentQuestion.hint}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

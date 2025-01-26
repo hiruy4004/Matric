@@ -113,10 +113,12 @@ export default function MathPracticePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Calculator className="mx-auto mb-4 h-12 w-12 animate-pulse text-muted-foreground" />
-          <p className="text-lg font-medium text-foreground">Loading questions...</p>
+      <div className="flex min-h-screen bg-background">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Calculator className="mx-auto mb-4 h-12 w-12 animate-pulse text-muted-foreground" />
+            <p className="text-lg font-medium text-foreground">Loading questions...</p>
+          </div>
         </div>
       </div>
     )
@@ -124,37 +126,32 @@ export default function MathPracticePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-lg">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
-              <h2 className="mb-2 text-lg font-medium text-foreground">{error}</h2>
-              <Button onClick={fetchQuestions}>Try Again</Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex min-h-screen bg-background">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <AlertCircle className="mx-auto mb-4 h-12 w-12 text-destructive" />
+                <h2 className="mb-2 text-lg font-medium text-foreground">{error}</h2>
+                <Button onClick={fetchQuestions}>Try Again</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
   if (showResults) {
-    return (
-      <QuizResults
-        score={score}
-        correctAnswers={correctAnswers}
-        wrongAnswers={wrongAnswers}
-        onRetry={fetchQuestions}
-      />
-    )
+    return <QuizResults score={score} correctAnswers={correctAnswers} wrongAnswers={wrongAnswers} onRetry={fetchQuestions} />
   }
 
   const currentQuestion = questions[currentQuestionIndex]
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container py-8 md:py-12 h-full">
+    <div className="flex min-h-screen bg-background">
+      <div className="flex-1 container py-8 md:py-12">
         <div className="mx-auto max-w-2xl space-y-8">
           <div className="flex items-center justify-between">
             <Link href="/practice">

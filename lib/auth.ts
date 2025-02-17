@@ -3,6 +3,15 @@
 import { SignInData, SignUpData, User } from "@/types/auth"
 import { signInSchema, signUpSchema } from "@/lib/validations/auth"
 import { rateLimiter, isSessionExpired, isStrongPassword, generateCSRFToken, validateCSRFToken } from "@/lib/security"
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+
+// Initialize Firebase app
+const firebaseConfig = {
+  // Your Firebase configuration
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 // Mock storage keys
 const USERS_STORAGE_KEY = "stored_users"
@@ -205,6 +214,24 @@ export async function signIn({ email, password }: SignInData): Promise<User> {
   return userWithDate
 }
 
+export async function signInWithGoogle(): Promise<{ user: User; profile: UserProfile }> {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Fetch user profile based on the authenticated user
+    const userProfile = getUserProfiles().find(profile => profile.userId === user.uid) || createUserProfile({ id: user.uid, email: user.email ?? '', name: user.displayName ?? '' });
+
+    return {
+        user: {
+            id: user.uid,
+            email: user.email ?? '',
+            name: user.displayName ?? '',
+        },
+        profile: userProfile
+    };
+}
+
 export async function signOut(): Promise<void> {
   if (typeof window === "undefined") return
   // Simulate network delay
@@ -271,4 +298,4 @@ export async function resetPassword(token: string, newPassword: string): Promise
   }
 
   console.log("Password reset with token:", token)
-} 
+}

@@ -2,18 +2,19 @@
 
 import Link from "next/link"
 import { GraduationCap, LogOut, User, Settings } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/components/auth-provider"
-import { UserAvatar } from "@/components/user-avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
+
+import { useAuth } from "@/components/auth-provider";
+import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/user-avatar';
+import { ThemeToggle } from './theme-toggle';
 
 export function Navbar() {
   const { user, profile, signOut } = useAuth()
@@ -31,7 +32,7 @@ export function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2 p-0 px-2">
-                    <UserAvatar name={user.name} image={profile?.image} className="h-6 w-6" />
+                    <UserAvatar src={profile?.image} fallback={user.name} />
                     <span>{user.name}</span>
                   </Button>
                 </DropdownMenuTrigger>

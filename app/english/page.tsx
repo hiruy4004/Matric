@@ -151,7 +151,7 @@ export default function EnglishPracticePage() {
               totalQuestions={questions.length}
               correctAnswers={correctAnswers}
               wrongAnswers={wrongAnswers}
-              onRestart={handleRestart}
+              onRetry={handleRestart}
             />
           </div>
         </div>

@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, XCircle, RotateCcw } from "lucide-react"
 
 interface QuizResultsProps {
-  score: number
-  correctAnswers: number
-  wrongAnswers: number
-  onRetry: () => void
+  score: number;
+  totalQuestions: number; 
+  correctAnswers: number;
+  wrongAnswers: number;
+  onRetry: () => void;
 }
 
 export function QuizResults({

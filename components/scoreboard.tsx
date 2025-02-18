@@ -2,22 +2,23 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Trophy, Flame, Star } from "lucide-react"
+import React from 'react';
 
 interface ScoreboardProps {
-  score: number
-  streak: number
-  correctAnswers: number
-  wrongAnswers: number
-  grade: number
+  score: number;
+  streak: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  grade: string;
 }
 
-export function Scoreboard({
+export const Scoreboard: React.FC<ScoreboardProps> = ({
   score,
   streak,
   correctAnswers,
   wrongAnswers,
   grade,
-}: ScoreboardProps) {
+}) => {
   return (
     <Card>
       <CardContent className="p-6">
@@ -60,4 +61,4 @@ export function Scoreboard({
       </CardContent>
     </Card>
   )
-} 
+}

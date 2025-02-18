@@ -151,7 +151,7 @@ export default function EnglishPracticePage() {
               totalQuestions={questions.length}
               correctAnswers={correctAnswers}
               wrongAnswers={wrongAnswers}
-              onRestart={handleRestart}
+              onRetry={handleRestart}
             />
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function EnglishPracticePage() {
                   </div>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="inline-block px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800">
-                      Grade {currentQuestion.grade}
+                      Grade {String(currentQuestion.grade)}
                     </span>
                     <DifficultyBadge difficulty={currentQuestion.difficulty} />
                   </p>
@@ -270,7 +270,7 @@ export default function EnglishPracticePage() {
                     streak={streak}
                     correctAnswers={correctAnswers}
                     wrongAnswers={wrongAnswers}
-                    grade={currentQuestion.grade}
+                    grade={String(currentQuestion.grade)}
                   />
                 </CardContent>
               </Card>

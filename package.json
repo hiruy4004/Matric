@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -40,6 +40,6 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=18.17.0"
+    "node": "22.0.0"
   }
 }

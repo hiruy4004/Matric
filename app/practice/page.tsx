@@ -12,6 +12,7 @@ export default function PracticePage() {
         <h1 className="text-3xl font-bold">Choose a Subject</h1>
         
         <div className="grid gap-8 md:grid-cols-2">
+          {/* Changed to /practice/math to go directly to math questions */}
           <Link href="/practice/math">
             <Card className="group relative overflow-hidden p-6 hover:shadow-lg transition-all">
               <div className="flex items-start justify-between">
@@ -32,6 +33,7 @@ export default function PracticePage() {
 
           <Link href="/practice/english">
             <Card className="group relative overflow-hidden p-6 hover:shadow-lg transition-all">
+              {/* Rest of the English card remains unchanged */}
               <div className="flex items-start justify-between">
                 <div>
                   <div className="w-12 h-12 rounded-lg bg-violet-500/10 flex items-center justify-center mb-4">

@@ -1,24 +1,15 @@
 "use client"
 
-import { SignInData, SignUpData, User } from "@/types/auth"
+import { SignInData, SignUpData, User as AuthUser } from "@/types/auth"
 import { signInSchema, signUpSchema } from "@/lib/validations/auth"
 import { rateLimiter, isSessionExpired, isStrongPassword, generateCSRFToken, validateCSRFToken } from "@/lib/security"
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-
-// Initialize Firebase app
-const firebaseConfig = {
-  // Your Firebase configuration
-};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 
 // Mock storage keys
 const USERS_STORAGE_KEY = "stored_users"
 const CURRENT_USER_KEY = "current_user"
 const USER_PROFILES_KEY = "user_profiles"
 
-interface StoredUser extends User {
+interface StoredUser extends Omit<User, 'createdAt'> {
   password: string
   createdAt: string
   emailVerified: boolean
@@ -44,6 +35,15 @@ interface UserProfile {
   }
   joinedAt: string
   lastActive: string
+}
+
+// User type definition moved up to fix reference issues
+export type User = {
+  id: string
+  email: string
+  name: string
+  image?: string
+  createdAt?: Date
 }
 
 // Helper functions for local storage
@@ -142,7 +142,10 @@ export async function signUp({ email, password, name }: SignUpData): Promise<Use
   }
 
   // Create user profile
-  const newProfile = createUserProfile(newUser)
+  const newProfile = createUserProfile({
+    ...newUser,
+    createdAt: new Date(newUser.createdAt)
+  })
 
   // Store user and profile
   const profiles = getUserProfiles()
@@ -214,27 +217,8 @@ export async function signIn({ email, password }: SignInData): Promise<User> {
   return userWithDate
 }
 
-export async function signInWithGoogle(): Promise<{ user: User; profile: UserProfile }> {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
-    // Fetch user profile based on the authenticated user
-    const userProfile = getUserProfiles().find(profile => profile.userId === user.uid) || createUserProfile({ id: user.uid, email: user.email ?? '', name: user.displayName ?? '' });
-
-    return {
-        user: {
-            id: user.uid,
-            email: user.email ?? '',
-            name: user.displayName ?? '',
-        },
-        profile: userProfile
-    };
-}
-
 export async function signOut(): Promise<void> {
   if (typeof window === "undefined") return
-  // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500))
   setCurrentUser(null)
 }
@@ -282,7 +266,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   console.log("Password reset requested for:", email)
 }
 
-export async function resetPassword(token: string, newPassword: string): Promise<void> {
+export async function resetPassword(token: string, newPassword: string, email: string): Promise<void> {
   if (typeof window === "undefined") {
     throw new Error("Cannot reset password on server side")
   }
@@ -292,10 +276,17 @@ export async function resetPassword(token: string, newPassword: string): Promise
     throw new Error("Invalid or expired token")
   }
 
-  // Check password strength
+  // Update error messages
   if (!isStrongPassword(newPassword)) {
-    throw new Error("Password does not meet security requirements")
+    throw new Error("Password must have: 8+ characters, 1 uppercase, 1 number, and 1 special symbol")
+  }
+  
+  const users = getStoredUsers()
+  if (users.some(user => user.email === email)) {
+    throw new Error("Account exists - Please sign in instead")
   }
 
   console.log("Password reset with token:", token)
 }
+
+// Remove duplicate functions and declarations below this point

@@ -14,7 +14,8 @@ import {
 import { useAuth } from "@/components/auth-provider";
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
-import { ThemeToggle } from './theme-toggle';
+// Remove ThemeToggle import
+// import { ThemeToggle } from './theme-toggle';
 
 export function Navbar() {
   const { user, profile, signOut } = useAuth()
@@ -59,10 +60,10 @@ export function Navbar() {
                 <Link href="/auth">Sign In</Link>
               </Button>
             )}
-            <ThemeToggle />
+            {/* Remove ThemeToggle component */}
           </nav>
         </div>
       </div>
     </nav>
   )
-} 
+}

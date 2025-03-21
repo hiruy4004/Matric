@@ -11,6 +11,7 @@ import { QuizResults } from "@/components/quiz-results"
 import { Scoreboard } from "@/components/scoreboard"
 import { Difficulty } from "@/types/questions"
 import { generateEnglishQuestions } from "@/lib/english-questions"
+import { toast } from "sonner"
 
 interface Question {
   question: string
@@ -95,9 +96,11 @@ export default function EnglishPracticePage() {
       setStreak(newStreak)
       setScore(prev => prev + (10 * (1 + Math.floor(newStreak / 3))))
       setCorrectAnswers(prev => prev + 1)
+      toast.success(`🎯 Correct! Gained ${10 * (1 + Math.floor(newStreak / 3))} XP${newStreak > 1 ? ` (${newStreak}-question streak bonus)` : ''}`)
     } else {
       setStreak(0)
       setWrongAnswers(prev => prev + 1)
+      toast.error("📘 Incorrect - Visit Study Hall to review this topic")
     }
 
     // Add delay before moving to next question
@@ -108,6 +111,7 @@ export default function EnglishPracticePage() {
       setShowHint(false)
     } else {
       setShowResults(true)
+      toast("🏁 Session Complete! Analyze your performance below")
     }
 
     setSelectedAnswer(null)

@@ -16,7 +16,8 @@ export function Footer() {
             <h3 className="text-lg font-semibold">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/practice/math" className="text-muted-foreground hover:text-foreground">
+                {/* Changed from /practice/math to /practice */}
+                <Link href="/practice" className="text-muted-foreground hover:text-foreground">
                   Mathematics
                 </Link>
               </li>
@@ -60,4 +61,4 @@ export function Footer() {
       </div>
     </footer>
   )
-} 
+}

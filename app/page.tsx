@@ -55,7 +55,8 @@ export default function HomePage() {
               Interactive practice sessions designed to help you excel in Mathematics and English Grammar
             </p>
             <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              <Link href="/practice/math">
+              {/* Changed from /practice/math to /practice */}
+              <Link href="/practice">
                 <Button size="lg" className="group relative overflow-hidden rounded-full px-8 py-6 bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all duration-300">
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="w-32 h-32 bg-white/10 rounded-full blur-3xl" />

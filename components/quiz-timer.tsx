@@ -35,15 +35,16 @@ export function QuizTimer({ isRunning }: QuizTimerProps) {
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-500" />
-            <span className="text-sm font-medium">Time</span>
-          </div>
-          <span className="text-2xl font-bold tabular-nums">{formatTime(seconds)}</span>
+      // Update time display text
+      <CardContent className="flex items-center gap-4 p-4">
+        <Clock className="h-6 w-6 text-blue-500" />
+        <div className="space-y-1">
+          <span className="text-sm font-semibold text-gray-600">Practice Timer</span>
+          <span className="text-2xl font-mono text-blue-600">
+            {formatTime(seconds)}
+          </span>
         </div>
       </CardContent>
     </Card>
   )
-} 
+}

@@ -1,6 +1,12 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { BrainCircuit, CheckCircle2, Flame, Target, Timer } from "lucide-react"
 
@@ -87,9 +93,15 @@ export function DailyGoals({ goals }: DailyGoalsProps) {
               value={(goals.currentStreak / goals.streakTarget) * 100}
               className="h-2"
             />
+            <div className="mt-4">
+              <h3 className="text-lg font-medium">Learning Progress</h3>
+              <p className="text-sm text-muted-foreground">
+                Today's mastery milestones
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   )
-} 
+}

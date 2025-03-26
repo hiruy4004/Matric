@@ -1,5 +1,6 @@
 import { Difficulty } from "@/types/questions"
 import { englishQuestions } from "@/data/english-questions"
+import { getRandomQuestions } from '@/lib/db-service'
 
 interface EnglishQuestion {
   question: string
@@ -444,123 +445,188 @@ function generateGrammarQuestion(grade: number): EnglishQuestion {
   return question
 }
 
-export function generateEnglishQuestions(count: number = 10): EnglishQuestion[] {
-  // Ensure count is at least 10
+export async function generateEnglishQuestions(count: number = 10): Promise<EnglishQuestion[]> {
   count = Math.max(count, 10);
 
-  if (typeof window === "undefined") {
-    return Array(count).fill({
-      question: "Loading...",
-      correct_answer: "0",
-      incorrect_answers: ["0", "0", "0"],
-      difficulty: "easy",
-      grade: 1,
-      hint: "Loading..."
-    });
-  }
-
-  // Check if we have predefined questions
-  if (englishQuestions && Array.isArray(englishQuestions) && englishQuestions.length > 0) {
-    // Create properly typed arrays
-    const easy: EnglishQuestion[] = [];
-    const medium: EnglishQuestion[] = [];
-    const hard: EnglishQuestion[] = [];
+  try {
+    const dbQuestions = await getRandomQuestions('english', count);
     
-    // Sort questions into difficulty buckets with proper typing
-    englishQuestions.forEach(q => {
-      try {
-        const question: EnglishQuestion = {
-          question: typeof q.text === 'string' ? q.text : "Question unavailable",
-          correct_answer: typeof q.correctAnswer === 'string' ? q.correctAnswer : "",
-          incorrect_answers: Array.isArray(q.options) && typeof q.correctAnswer === 'string' ? 
-                            q.options.filter(o => o !== q.correctAnswer) : [],
-          difficulty: (q.difficulty as Difficulty) || "medium",
-          grade: typeof q.grade === 'number' ? q.grade : typeof q.difficulty === 'string' && q.difficulty === 'hard' ? 10 : q.difficulty === 'medium' ? 6 : 3,
-          hint: typeof q.explanation === 'string' ? q.explanation : "Think carefully"
-        };
-        
-        if (question.question && question.correct_answer && question.incorrect_answers.length > 0) {
-          if (question.difficulty === 'easy') easy.push(question);
-          else if (question.difficulty === 'medium') medium.push(question);
-          else hard.push(question);
-        }
-      } catch (error) {
-        console.error("Error processing question:", error);
-      }
-    });
-
-    // Create the initial array of questions
-    let result = shuffleArray([
-      ...selectRandom(easy, Math.ceil(count * 0.4)),
-      ...selectRandom(medium, Math.ceil(count * 0.4)),
-      ...selectRandom(hard, Math.ceil(count * 0.2))
-    ]);
-
-    // If we don't have enough questions, generate more using the grammar generator
-    if (result.length < count) {
-      const additionalCount = count - result.length;
-      const additionalQuestions: EnglishQuestion[] = [];
-      const maxAttempts = additionalCount * 2;
-      let attempts = 0;
-
-      while (additionalQuestions.length < additionalCount && attempts < maxAttempts) {
-        attempts++;
-        const grade = Math.floor(Math.random() * 12) + 1;
-        
-        try {
-          const question = generateGrammarQuestion(grade);
-          if (!result.some(q => q.question === question.question) && 
-              !additionalQuestions.some(q => q.question === question.question)) {
-            additionalQuestions.push(question);
+    if (dbQuestions && dbQuestions.length >= count) {
+      return dbQuestions
+        .filter((q): q is EnglishQuestion => {
+          try {
+            return !!q && (
+              typeof q.question === 'string' && q.question.length > 0 &&
+              typeof q.correct_answer === 'string' && q.correct_answer.length > 0 &&
+              Array.isArray(q.incorrect_answers) &&
+              q.incorrect_answers.every(ans => typeof ans === 'string') &&
+              q.incorrect_answers.length > 0 &&
+              !q.incorrect_answers.includes(q.correct_answer) &&
+              typeof q.hint === 'string' && q.hint.length > 0 &&
+              Number.isInteger(q.grade) && q.grade >= 1 && q.grade <= 12 &&
+              typeof q.difficulty === 'string' &&
+              ['easy', 'medium', 'hard'].includes(q.difficulty.toLowerCase())
+            );
+          } catch {
+            return false;
           }
-        } catch (error) {
-          console.error(`Failed to generate additional question: ${error}`);
+        })
+        .slice(0, count);
+    }
+    
+    const additionalCount = count - (dbQuestions?.length || 0);
+    const questions: EnglishQuestion[] = (dbQuestions || [])
+      .filter((q): q is EnglishQuestion => {
+        try {
+          return !!q && (
+            typeof q.question === 'string' && q.question.length > 0 &&
+            typeof q.correct_answer === 'string' && q.correct_answer.length > 0 &&
+            Array.isArray(q.incorrect_answers) &&
+            q.incorrect_answers.every(ans => typeof ans === 'string') &&
+            q.incorrect_answers.length > 0 &&
+            !q.incorrect_answers.includes(q.correct_answer) &&
+            typeof q.hint === 'string' && q.hint.length > 0 &&
+            Number.isInteger(q.grade) && q.grade >= 1 && q.grade <= 12 &&
+            typeof q.difficulty === 'string' &&
+            ['easy', 'medium', 'hard'].includes(q.difficulty.toLowerCase())
+          );
+        } catch {
+          return false;
         }
-      }
-
-      result = [...result, ...additionalQuestions];
-    }
-
-    return result.slice(0, count);
-  } else {
-    // Fallback to generating grammar questions
-    if (count < 1) {
-      throw new Error("Count must be greater than 0")
-    }
-
-    const questions: EnglishQuestion[] = []
-    const maxAttempts = count * 2 // Allow some retries for failed generations
-    let attempts = 0
+      });
+    const maxAttempts = additionalCount * 2;
+    let attempts = 0;
 
     while (questions.length < count && attempts < maxAttempts) {
-      attempts++
-      const grade = Math.floor(Math.random() * 12) + 1
+      attempts++;
+      const grade = Math.floor(Math.random() * 12) + 1;
       
       try {
-        const question = generateGrammarQuestion(grade)
-        // Ensure we don't add duplicate questions
+        const question = generateGrammarQuestion(grade);
         if (!questions.some(q => q.question === question.question)) {
-          questions.push(question)
+          questions.push(question);
         }
       } catch (error) {
-        console.error(`Failed to generate question: ${error}`)
-        // Only use fallback if we're really struggling to generate questions
-        if (attempts >= maxAttempts && questions.length < count) {
-          questions.push({
-            question: "Choose the correct verb: He _____ to school.",
-            correct_answer: "goes",
-            incorrect_answers: ["go", "going", "gone"],
-            difficulty: "easy",
-            grade: 1,
-            hint: "Use 'goes' with he/she/it"
-          })
-        }
+        console.error(`Failed to generate question: ${error}`);
       }
     }
 
-    return questions
-  }
-}
+    // Add fallback question if needed
+    if (questions.length < count) {
+      questions.push({
+        question: "Choose the correct verb: He _____ to school.",
+        correct_answer: "goes",
+        incorrect_answers: ["go", "going", "gone"],
+        difficulty: "easy",
+        grade: 1,
+        hint: "Use 'goes' with he/she/it"
+      });
+    }
+
+    return questions;
+  } catch (error) {
+    console.error("Error fetching questions from database:", error);
+    
+    // Fallback to the original method
+    if (englishQuestions && Array.isArray(englishQuestions) && englishQuestions.length > 0) {
+      // Create properly typed arrays
+      const easy: EnglishQuestion[] = [];
+      const medium: EnglishQuestion[] = [];
+      const hard: EnglishQuestion[] = [];
+      
+      // Sort questions into difficulty buckets with proper typing
+      englishQuestions.forEach(q => {
+        try {
+          const question: EnglishQuestion = {
+            question: typeof q.text === 'string' ? q.text : "Question unavailable",
+            correct_answer: typeof q.correctAnswer === 'string' ? q.correctAnswer : "",
+            incorrect_answers: Array.isArray(q.options) && typeof q.correctAnswer === 'string' ? 
+                              q.options.filter(o => o !== q.correctAnswer) : [],
+            difficulty: (q.difficulty as Difficulty) || "medium",
+            grade: typeof q.grade === 'number' ? q.grade : typeof q.difficulty === 'string' && q.difficulty === 'hard' ? 10 : q.difficulty === 'medium' ? 6 : 3,
+            hint: typeof q.explanation === 'string' ? q.explanation : "Think carefully"
+          };
+          
+          if (question.question && question.correct_answer && question.incorrect_answers.length > 0) {
+            if (question.difficulty === 'easy') easy.push(question);
+            else if (question.difficulty === 'medium') medium.push(question);
+            else hard.push(question);
+          }
+        } catch (error) {
+          console.error("Error processing question:", error);
+        }
+      });
+  
+      // Create the initial array of questions
+      let result = shuffleArray([
+        ...selectRandom(easy, Math.ceil(count * 0.4)),
+        ...selectRandom(medium, Math.ceil(count * 0.4)),
+        ...selectRandom(hard, Math.ceil(count * 0.2))
+      ]);
+  
+      // If we don't have enough questions, generate more using the grammar generator
+      if (result.length < count) {
+        const additionalCount = count - result.length;
+        const additionalQuestions: EnglishQuestion[] = [];
+        const maxAttempts = additionalCount * 2;
+        let attempts = 0;
+  
+        while (additionalQuestions.length < additionalCount && attempts < maxAttempts) {
+          attempts++;
+          const grade = Math.floor(Math.random() * 12) + 1;
+          
+          try {
+            const question = generateGrammarQuestion(grade);
+            if (!result.some(q => q.question === question.question) && 
+                !additionalQuestions.some(q => q.question === question.question)) {
+              additionalQuestions.push(question);
+            }
+          } catch (error) {
+            console.error(`Failed to generate additional question: ${error}`);
+          }
+        }
+  
+        result = [...result, ...additionalQuestions];
+      }
+  
+      return result.slice(0, count);
+    } else {
+      // Fallback to generating grammar questions
+      if (count < 1) {
+        throw new Error("Count must be greater than 0")
+      }
+  
+      const questions: EnglishQuestion[] = []
+      const maxAttempts = count * 2
+      let attempts = 0
+  
+      while (questions.length < count && attempts < maxAttempts) {
+        attempts++
+        const grade = Math.floor(Math.random() * 12) + 1
+        
+        try {
+          const question = generateGrammarQuestion(grade)
+          if (!questions.some(q => q.question === question.question)) {
+            questions.push(question)
+          }
+        } catch (error) {
+          console.error(`Failed to generate question: ${error}`)
+          if (attempts >= maxAttempts && questions.length < count) {
+            questions.push({
+              question: "Choose the correct verb: He _____ to school.",
+              correct_answer: "goes",
+              incorrect_answers: ["go", "going", "gone"],
+              difficulty: "easy",
+              grade: 1,
+              hint: "Use 'goes' with he/she/it"
+            })
+          }
+        }
+      }
+      return questions
+    }
+  } // Properly closes catch block
+} // Properly closes generateEnglishQuestions function
 
 function selectRandom(arr: EnglishQuestion[], count: number) {
   return [...arr].sort(() => Math.random() - 0.5).slice(0, count);

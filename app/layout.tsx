@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
+import { initializeDatabase } from '@/lib/db-service'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -18,6 +19,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // Initialize the database when the app starts
+  if (typeof window !== 'undefined') {
+    initializeDatabase().catch(console.error)
+  }
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <body className={`${inter.className} flex min-h-full flex-col bg-background antialiased`}>
@@ -36,4 +41,4 @@ export default function RootLayout({
       </body>
     </html>
   )
-} 
+}

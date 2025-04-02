@@ -1,30 +1,24 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface UserAvatarProps {
   src?: string;
-  fallback?: string;
+  name: string;
 }
 
-export function UserAvatar({ src, fallback }: UserAvatarProps) {
+export function UserAvatar({ src, name }: UserAvatarProps) {
+  const initial = name?.charAt(0).toUpperCase() || '?';
+  
   return (
     <Avatar>
-      <AvatarImage src={src} />
-      <AvatarFallback>{fallback}</AvatarFallback>
-    </Avatar>
-  )
-"use client"
-
-interface UserAvatarProps {
-  src?: string;
-  fallback?: string;
-}
-
-  return (
-    <Avatar>
-      <AvatarImage src={src} />
-      <AvatarFallback>{fallback}</AvatarFallback>
+      {src ? (
+        <AvatarImage src={src} alt={name} />
+      ) : (
+        <AvatarFallback className="bg-blue-600 text-white">
+          {initial}
+        </AvatarFallback>
+      )}
     </Avatar>
   )
 }

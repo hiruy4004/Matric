@@ -26,15 +26,18 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-b from-black to-zinc-900">
       {/* Navigation */}
       <div className="container">
-        <div className="flex items-center justify-end py-4">
-          <Link href="/auth">
-            <Button variant="outline" size="sm" className="group rounded-full px-4 py-2 border-zinc-700 hover:border-violet-500/50 hover:bg-violet-500/10 transition-all duration-300">
-              <span className="flex items-center gap-2">
-                <LogIn className="w-4 h-4" />
-                Sign In
-              </span>
-            </Button>
-          </Link>
+        <div className="flex items-center justify-between py-4">
+          <div></div> {/* Empty div for flex spacing */}
+          <div className="flex items-center gap-4">
+            <Link href="/login">
+              <Button variant="outline" size="sm" className="group rounded-full px-4 py-2 border-zinc-700 hover:border-violet-500/50 hover:bg-violet-500/10 transition-all duration-300">
+                <span className="flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 

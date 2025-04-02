@@ -1,8 +1,8 @@
 "use client"
 
 import React from "react"
-import { AuthContextType, SignInData, SignUpData, User, UserProfile } from "@/types/auth"
-import { signIn, signOut, signInWithGoogle, getUser, getUserProfile, updateUserProfile } from "@/lib/auth"
+import { AuthContextType, SignInData, User, UserProfile } from "@/types/auth"
+import { signIn, signOut, getUser, getUserProfile, updateUserProfile } from "@/lib/auth"
 
 const AuthContext = React.createContext<AuthContextType | null>(null)
 
@@ -51,21 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const { user, profile } = await signInWithGoogle()
-      setUser(user)
-      setProfile(profile)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign in with Google")
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleSignOut = async () => {
     try {
       setIsLoading(true)
@@ -88,6 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Remove handleGoogleSignIn function
+
   return (
     <AuthContext.Provider
       value={{
@@ -96,7 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         error,
         signIn: handleSignIn,
-        signInWithGoogle: handleGoogleSignIn,
         signOut: handleSignOut,
         updateProfile
       }}
@@ -104,4 +90,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-} 
+}

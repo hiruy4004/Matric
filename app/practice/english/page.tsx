@@ -12,6 +12,7 @@ import { Scoreboard } from "@/components/scoreboard"
 import { Difficulty } from "@/types/questions"
 import { generateEnglishQuestions } from "@/lib/english-questions"
 import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 
 interface Question {
   question: string
@@ -51,11 +52,61 @@ export default function EnglishPracticePage() {
     return allAnswers
   }
 
-  function fetchQuestions() {
+  async function fetchQuestions() {
     try {
       setIsLoading(true)
       setError("")
-      const newQuestions = generateEnglishQuestions(10)
+      
+      // Fetch questions from Supabase without filtering by subject
+      const { data: supabaseQuestions, error: supabaseError } = await supabase
+        .from('questions')
+        .select('*')
+        // Remove the subject filter since the column doesn't exist
+        .limit(10)
+      
+      console.log("Supabase response:", { data: supabaseQuestions, error: supabaseError })
+      
+      if (supabaseError) {
+        console.error("Supabase error:", supabaseError)
+        throw new Error(`Supabase error: ${supabaseError.message}`)
+      }
+      
+      if (!supabaseQuestions || supabaseQuestions.length === 0) {
+        setError("No questions found. Please add some questions first.")
+        setIsLoading(false)
+        return
+      }
+      
+      console.log("Questions from Supabase:", supabaseQuestions)
+      
+      // Format Supabase questions
+      const newQuestions = supabaseQuestions.map(q => {
+        console.log("Processing question:", q)
+        
+        let incorrectAnswers = []
+        try {
+          if (Array.isArray(q.incorrect_answers)) {
+            incorrectAnswers = q.incorrect_answers
+          } else if (typeof q.incorrect_answers === 'string') {
+            incorrectAnswers = JSON.parse(q.incorrect_answers)
+          }
+        } catch (parseError) {
+          console.error("Error parsing incorrect_answers:", parseError, q.incorrect_answers)
+          incorrectAnswers = []
+        }
+        
+        return {
+          question: q.question || q.text,
+          correct_answer: q.correct_answer || q.correctAnswer,
+          incorrect_answers: incorrectAnswers,
+          difficulty: q.difficulty as Difficulty,
+          grade: q.grade || 5,
+          hint: q.hint || "Think carefully about the grammar rules."
+        }
+      })
+      
+      console.log("Formatted questions:", newQuestions)
+      
       setQuestions(newQuestions)
       
       // Pre-generate all shuffled answers
@@ -64,6 +115,7 @@ export default function EnglishPracticePage() {
       )
       setQuestionAnswers(shuffledAnswers)
       
+      // Reset state
       setCurrentQuestionIndex(0)
       setScore(0)
       setStreak(0)
@@ -74,7 +126,8 @@ export default function EnglishPracticePage() {
       setSelectedAnswer(null)
       setIsChecking(false)
     } catch (err) {
-      setError("Failed to generate questions. Please try again.")
+      console.error("Error fetching questions:", err)
+      setError(`Failed to load questions: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }

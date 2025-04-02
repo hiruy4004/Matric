@@ -10,59 +10,82 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu"
-
-import { useAuth } from "@/components/auth-provider";
-import { Button } from '@/components/ui/button';
-import { UserAvatar } from '@/components/user-avatar';
-// Remove ThemeToggle import
-// import { ThemeToggle } from './theme-toggle';
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import { UserAvatar } from './user-avatar'
 
 export function Navbar() {
-  const { user, profile, signOut } = useAuth()
+  const [user, setUser] = useState(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          setUser(session.user)
+        } else {
+          setUser(null)
+          // Remove automatic redirect to login
+        }
+      }
+    )
+    return () => subscription.unsubscribe()
+  }, [router])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+    <nav className="sticky top-0 z-50 border-b bg-black text-white shadow-sm">
+      <div className="container flex h-14 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <GraduationCap className="h-5 w-5" />
           <span>Practice Arena</span>
         </Link>
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <nav className="flex items-center space-x-4">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 p-0 px-2">
-                    <UserAvatar src={profile?.image} fallback={user.name} />
-                    <span>{user.name}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <User className="mr-2 h-4 w-4" />
+        
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-full border border-zinc-700 p-1 px-3 hover:bg-zinc-800 hover:border-violet-500/50 transition-all duration-200">
+                <UserAvatar name={user.user_metadata?.name || user.email} />
+                <span className="text-sm font-medium text-white">{user.user_metadata?.name || user.email}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-zinc-900 border border-zinc-700 rounded-lg shadow-lg animate-in fade-in-80 slide-in-from-top-5">
+              <DropdownMenuLabel className="font-normal border-b border-zinc-800">
+                <div className="flex flex-col space-y-1 px-1 py-2">
+                  <p className="text-sm font-medium text-white">{user.user_metadata?.name}</p>
+                  <p className="text-xs text-zinc-400 truncate">{user.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <div className="p-1">
+                <DropdownMenuItem asChild className="hover:bg-zinc-800 focus:bg-zinc-800 rounded-md transition-colors duration-150 cursor-pointer">
+                  <Link href="/profile" className="flex items-center text-zinc-200 px-2 py-1.5">
+                    <User className="mr-2 h-4 w-4 text-violet-400" />
                     Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="hover:bg-zinc-800 focus:bg-zinc-800 rounded-md transition-colors duration-150 cursor-pointer">
+                  <Link href="/settings" className="flex items-center text-zinc-200 px-2 py-1.5">
+                    <Settings className="mr-2 h-4 w-4 text-violet-400" />
                     Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/auth">Sign In</Link>
-              </Button>
-            )}
-            {/* Remove ThemeToggle component */}
-          </nav>
-        </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1 h-px bg-zinc-800" />
+                <DropdownMenuItem 
+                  onClick={handleSignOut}
+                  className="hover:bg-red-900/20 focus:bg-red-900/20 text-red-400 rounded-md transition-colors duration-150 cursor-pointer px-2 py-1.5"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </nav>
   )

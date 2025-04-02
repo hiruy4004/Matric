@@ -17,7 +17,7 @@ import {
 
 export default function AuthPage() {
   const router = useRouter()
-  const { signIn, signInWithGoogle, isLoading, error } = useAuth()
+  const { signIn, isLoading, error } = useAuth()
   const [formError, setFormError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -36,14 +36,7 @@ export default function AuthPage() {
     }
   }
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle()
-      router.push("/practice")
-    } catch (err: any) {
-      setFormError(err.message || "Failed to sign in with Google")
-    }
-  }
+  // Remove handleGoogleSignIn function
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black to-zinc-900">
@@ -81,32 +74,10 @@ export default function AuthPage() {
             <CardHeader className="space-y-1 px-6 pt-6">
               <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
               <CardDescription>
-                Choose your preferred sign in method
+                Sign in with your email
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 px-6 pb-6">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full gap-2 bg-white/5 hover:bg-white/10 border-zinc-200/20 dark:border-zinc-800/20 hover:border-zinc-200/40 dark:hover:border-zinc-800/40 transition-colors"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                <Chrome className="h-5 w-5" />
-                Continue with Google
-              </Button>
-
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-zinc-700/50" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with email
-                  </span>
-                </div>
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -143,4 +114,4 @@ export default function AuthPage() {
       </div>
     </div>
   )
-} 
+}

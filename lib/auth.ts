@@ -1,292 +1,87 @@
 "use client"
 
-import { SignInData, SignUpData, User as AuthUser } from "@/types/auth"
+import { supabase } from './supabase'
+import { SignInData, SignUpData, User, UserProfile } from "@/types/auth"
 import { signInSchema, signUpSchema } from "@/lib/validations/auth"
-import { rateLimiter, isSessionExpired, isStrongPassword, generateCSRFToken, validateCSRFToken } from "@/lib/security"
+import { isStrongPassword } from "@/lib/security"
 
-// Mock storage keys
-const USERS_STORAGE_KEY = "stored_users"
-const CURRENT_USER_KEY = "current_user"
-const USER_PROFILES_KEY = "user_profiles"
+export async function signIn(email: string, password: string) {
+  try {
+    // Validate input
+    const validatedData = signInSchema.parse({ email, password })
 
-interface StoredUser extends Omit<User, 'createdAt'> {
-  password: string
-  createdAt: string
-  emailVerified: boolean
-  lastLoginTime?: number
-  loginAttempts: number
-  lockedUntil?: number
-}
-
-interface UserProfile {
-  userId: string
-  name: string
-  email: string
-  level: number
-  xp: number
-  streak: number
-  questionsAnswered: number
-  achievements: string[]
-  subjects: {
-    math: { progress: number, score: number }
-    english: { progress: number, score: number }
-    science: { progress: number, score: number }
-    history: { progress: number, score: number }
-  }
-  joinedAt: string
-  lastActive: string
-}
-
-// User type definition moved up to fix reference issues
-export type User = {
-  id: string
-  email: string
-  name: string
-  image?: string
-  createdAt?: Date
-}
-
-// Helper functions for local storage
-function getStoredUsers(): StoredUser[] {
-  if (typeof window === "undefined") return []
-  const users = localStorage.getItem(USERS_STORAGE_KEY)
-  return users ? JSON.parse(users) : []
-}
-
-function setStoredUsers(users: StoredUser[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
-}
-
-function getCurrentUser(): User | null {
-  if (typeof window === "undefined") return null
-  const user = localStorage.getItem(CURRENT_USER_KEY)
-  return user ? JSON.parse(user) : null
-}
-
-function setCurrentUser(user: User | null) {
-  if (typeof window === "undefined") return
-  if (user) {
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user))
-  } else {
-    localStorage.removeItem(CURRENT_USER_KEY)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: validatedData.email,
+      password: validatedData.password,
+    })
+    
+    if (error) throw error
+    return data.user
+  } catch (error) {
+    console.error('Error signing in:', error)
+    throw error
   }
 }
 
-function getUserProfiles(): UserProfile[] {
-  if (typeof window === "undefined") return []
-  const profiles = localStorage.getItem(USER_PROFILES_KEY)
-  return profiles ? JSON.parse(profiles) : []
-}
-
-function setUserProfiles(profiles: UserProfile[]) {
-  if (typeof window === "undefined") return
-  localStorage.setItem(USER_PROFILES_KEY, JSON.stringify(profiles))
-}
-
-// Create initial profile for new user
-function createUserProfile(user: User): UserProfile {
-  return {
-    userId: user.id,
-    name: user.name,
-    email: user.email,
-    level: 1,
-    xp: 0,
-    streak: 0,
-    questionsAnswered: 0,
-    achievements: [],
-    subjects: {
-      math: { progress: 0, score: 0 },
-      english: { progress: 0, score: 0 },
-      science: { progress: 0, score: 0 },
-      history: { progress: 0, score: 0 }
-    },
-    joinedAt: new Date().toISOString(),
-    lastActive: new Date().toISOString()
-  }
-}
-
-// Auth functions
-export async function signUp({ email, password, name }: SignUpData): Promise<User> {
-  if (typeof window === "undefined") {
-    throw new Error("Cannot sign up on server side")
-  }
-
+export async function signUp(email: string, password: string, name: string) {
   // Validate input
   const validatedData = signUpSchema.parse({ email, password, name })
   
-  // Check password strength
   if (!isStrongPassword(validatedData.password)) {
     throw new Error("Password does not meet security requirements")
   }
-  
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
 
-  const users = getStoredUsers()
-  
-  // Check if user already exists
-  if (users.some(user => user.email === email)) {
-    throw new Error("User already exists")
-  }
-
-  // Create new user
-  const newUser: StoredUser = {
-    id: Math.random().toString(36).slice(2),
+  const { data, error } = await supabase.auth.signUp({
     email: validatedData.email,
-    name: validatedData.name,
-    password: validatedData.password, // Store password as-is for demo
-    createdAt: new Date().toISOString(),
-    emailVerified: false,
-    loginAttempts: 0
-  }
-
-  // Create user profile
-  const newProfile = createUserProfile({
-    ...newUser,
-    createdAt: new Date(newUser.createdAt)
+    password: validatedData.password,
+    options: {
+      data: {
+        name: validatedData.name
+      }
+    }
   })
-
-  // Store user and profile
-  const profiles = getUserProfiles()
-  profiles.push(newProfile)
-  setUserProfiles(profiles)
-
-  users.push(newUser)
-  setStoredUsers(users)
-
-  // Generate CSRF token
-  generateCSRFToken()
-
-  // Set current user (excluding password)
-  const { password: _, emailVerified, loginAttempts, lockedUntil, ...user } = newUser
-  const userWithDate = {
-    ...user,
-    createdAt: new Date(user.createdAt)
-  }
   
-  setCurrentUser(userWithDate)
-  return userWithDate
-}
-
-export async function signIn({ email, password }: SignInData): Promise<User> {
-  if (typeof window === "undefined") {
-    throw new Error("Cannot sign in on server side")
-  }
-
-  // Validate input
-  const validatedData = signInSchema.parse({ email, password })
-  
-  // Check rate limit
-  if (!rateLimiter.checkRateLimit(validatedData.email)) {
-    const timeUntilReset = rateLimiter.getTimeUntilReset(validatedData.email)
-    throw new Error(`Too many login attempts. Please try again in ${Math.ceil(timeUntilReset / 1000 / 60)} minutes`)
-  }
-  
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000))
-
-  const users = getStoredUsers()
-  const user = users.find(u => u.email === validatedData.email && u.password === validatedData.password)
-  
-  if (!user) {
-    throw new Error("Invalid email or password")
-  }
-
-  // Check if account is locked
-  if (user.lockedUntil && Date.now() < user.lockedUntil) {
-    const waitTime = Math.ceil((user.lockedUntil - Date.now()) / 1000 / 60)
-    throw new Error(`Account is locked. Please try again in ${waitTime} minutes`)
-  }
-
-  // Reset login attempts on successful login
-  user.loginAttempts = 0
-  user.lockedUntil = undefined
-  user.lastLoginTime = Date.now()
-  users[users.findIndex(u => u.id === user.id)] = user
-  setStoredUsers(users)
-
-  // Set current user (excluding sensitive data)
-  const { password: _, emailVerified, loginAttempts, lockedUntil, ...userWithoutPassword } = user
-  const userWithDate = {
-    ...userWithoutPassword,
-    createdAt: new Date(user.createdAt)
-  }
-  
-  setCurrentUser(userWithDate)
-  return userWithDate
+  if (error) throw error
+  return data
 }
 
 export async function signOut(): Promise<void> {
-  if (typeof window === "undefined") return
-  await new Promise(resolve => setTimeout(resolve, 500))
-  setCurrentUser(null)
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
 }
 
-export function getUser(): User | null {
-  return getCurrentUser()
-}
-
-export function getUserProfile(userId: string): UserProfile | null {
-  const profiles = getUserProfiles()
-  return profiles.find(p => p.userId === userId) || null
-}
-
-export function updateUserProfile(profile: UserProfile): void {
-  if (typeof window === "undefined") return
-  const profiles = getUserProfiles()
-  const index = profiles.findIndex(p => p.userId === profile.userId)
-  if (index !== -1) {
-    profiles[index] = profile
-    setUserProfiles(profiles)
+export async function getUser() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error) throw error
+    return user
+  } catch (error) {
+    console.error('Error getting user:', error)
+    return null
   }
 }
 
-// Password reset functionality (mock implementation)
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+    
+  if (error) return null
+  return data
+}
+
+export async function updateUserProfile(profile: Partial<UserProfile>): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update(profile)
+    .eq('user_id', profile.userId)
+    
+  if (error) throw error
+}
+
 export async function requestPasswordReset(email: string): Promise<void> {
-  if (typeof window === "undefined") {
-    throw new Error("Cannot request password reset on server side")
-  }
-
-  // Check rate limit for password reset requests
-  if (!rateLimiter.checkRateLimit(`reset_${email}`)) {
-    const timeUntilReset = rateLimiter.getTimeUntilReset(`reset_${email}`)
-    throw new Error(`Too many password reset attempts. Please try again in ${Math.ceil(timeUntilReset / 1000 / 60)} minutes`)
-  }
-
-  const users = getStoredUsers()
-  const user = users.find(u => u.email === email)
-
-  if (!user) {
-    // In a real app, you might want to return success even if user doesn't exist
-    // to prevent email enumeration
-    throw new Error("If an account exists with this email, you will receive a password reset link")
-  }
-
-  console.log("Password reset requested for:", email)
+  const { error } = await supabase.auth.resetPasswordForEmail(email)
+  if (error) throw error
 }
-
-export async function resetPassword(token: string, newPassword: string, email: string): Promise<void> {
-  if (typeof window === "undefined") {
-    throw new Error("Cannot reset password on server side")
-  }
-
-  // Validate CSRF token
-  if (!validateCSRFToken(token)) {
-    throw new Error("Invalid or expired token")
-  }
-
-  // Update error messages
-  if (!isStrongPassword(newPassword)) {
-    throw new Error("Password must have: 8+ characters, 1 uppercase, 1 number, and 1 special symbol")
-  }
-  
-  const users = getStoredUsers()
-  if (users.some(user => user.email === email)) {
-    throw new Error("Account exists - Please sign in instead")
-  }
-
-  console.log("Password reset with token:", token)
-}
-
-// Remove duplicate functions and declarations below this point

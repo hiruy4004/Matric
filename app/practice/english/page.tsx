@@ -15,12 +15,13 @@ import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 
 interface Question {
-  question: string
+  text: string
   correct_answer: string
   incorrect_answers: string[]
   difficulty: Difficulty
   grade: number
   hint: string
+  subject: string
 }
 
 export default function EnglishPracticePage() {
@@ -57,11 +58,10 @@ export default function EnglishPracticePage() {
       setIsLoading(true)
       setError("")
       
-      // Fetch questions from Supabase without filtering by subject
       const { data: supabaseQuestions, error: supabaseError } = await supabase
         .from('questions')
         .select('*')
-        // Remove the subject filter since the column doesn't exist
+        .eq('subject', 'english')
         .limit(10)
       
       console.log("Supabase response:", { data: supabaseQuestions, error: supabaseError })
@@ -81,27 +81,27 @@ export default function EnglishPracticePage() {
       
       // Format Supabase questions
       const newQuestions = supabaseQuestions.map(q => {
-        console.log("Processing question:", q)
-        
         let incorrectAnswers = []
         try {
           if (Array.isArray(q.incorrect_answers)) {
             incorrectAnswers = q.incorrect_answers
           } else if (typeof q.incorrect_answers === 'string') {
-            incorrectAnswers = JSON.parse(q.incorrect_answers)
+            // Handle escaped JSON strings
+            incorrectAnswers = JSON.parse(q.incorrect_answers.replace(/\\"/g, '"'))
           }
         } catch (parseError) {
-          console.error("Error parsing incorrect_answers:", parseError, q.incorrect_answers)
+          console.error("Parsing error:", parseError)
           incorrectAnswers = []
         }
-        
+
         return {
-          question: q.question || q.text,
+          text: q.text || q.question || "", // Fallback to 'question' field if 'text' missing
           correct_answer: q.correct_answer || q.correctAnswer,
           incorrect_answers: incorrectAnswers,
-          difficulty: q.difficulty as Difficulty,
-          grade: q.grade || 5,
-          hint: q.hint || "Think carefully about the grammar rules."
+          difficulty: (q.difficulty || 'medium') as Difficulty,
+          grade: Number(q.grade) || 5,
+          hint: q.hint || "Think carefully about the grammar rules.",
+          subject: q.subject || "english"
         }
       })
       
@@ -269,7 +269,7 @@ export default function EnglishPracticePage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="rounded-xl bg-gradient-to-br from-zinc-100/80 to-white/80 dark:from-zinc-900/80 dark:to-zinc-800/80 p-6 shadow-inner border border-zinc-200 dark:border-zinc-700">
-                  <p className="text-xl font-medium">{currentQuestion.question}</p>
+                  <p className="text-xl font-medium">{currentQuestion.text || currentQuestion.question}</p>
                   {showHint && (
                     <div className="mt-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 p-4 border border-violet-200 dark:border-violet-900">
                       <p className="text-sm text-muted-foreground flex items-center gap-2">

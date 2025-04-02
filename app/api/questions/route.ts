@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/db-service'
 import { NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
@@ -28,5 +29,21 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error handling file operation:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+
+export async function GET() {
+  try {
+    const questions = await prisma.question.findMany({
+      where: { subject: 'math' },
+      take: 10
+    })
+    return NextResponse.json(questions)
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to fetch questions' },
+      { status: 500 }
+    )
   }
 }

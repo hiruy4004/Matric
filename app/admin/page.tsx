@@ -1,50 +1,71 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import Dashboard from './dashboard'
-import QuestionForm from './components/question-form'
-import ImportExport from './components/import-export'
-import Statistics from './components/statistics'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase, getUser } from '@/lib/supabase-client';
 
 export default function AdminPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const tabParam = searchParams.get('tab')
-  const [activeTab, setActiveTab] = useState(tabParam || 'dashboard')
-  
-  useEffect(() => {
-    if (tabParam) {
-      setActiveTab(tabParam)
-    }
-  }, [tabParam])
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab)
-    router.push(`/admin?tab=${tab}`)
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Safely get the user
+        const currentUser = await getUser();
+        
+        if (!currentUser) {
+          // No user found, redirect to login
+          router.push('/login');
+          return;
+        }
+        
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Authentication error:', error);
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+    
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || !session) {
+          router.push('/login');
+        } else if (session) {
+          setUser(session.user);
+        }
+      }
+    );
+
+    // Clean up subscription
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-6 flex space-x-2 sm:hidden">
-        <select 
-          value={activeTab}
-          onChange={(e) => handleTabChange(e.target.value)}
-          className="w-full p-2 rounded-lg bg-zinc-900/50 border border-zinc-800 text-zinc-400 focus:border-violet-500/50 focus:ring-violet-500/20"
-        >
-          <option value="dashboard">Dashboard</option>
-          <option value="add">Add Question</option>
-          <option value="import">Import/Export</option>
-          <option value="stats">Statistics</option>
-        </select>
-      </div>
-      
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6">
-        {activeTab === 'dashboard' && <Dashboard />}
-        {activeTab === 'add' && <QuestionForm />}
-        {activeTab === 'import' && <ImportExport />}
-        {activeTab === 'stats' && <Statistics />}
-      </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+      {user && (
+        <div>
+          <p>Welcome, {user.email}</p>
+          {/* Rest of your admin content */}
+        </div>
+      )}
     </div>
-  )
+  );
 }

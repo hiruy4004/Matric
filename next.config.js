@@ -1,18 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   reactStrictMode: true,
-  swcMinify: true,
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**'
-      }
-    ],
-  }
+  // Remove or correct the 'swcMinify' key if it's not supported
+  // swcMinify: true, // Uncomment if supported by your Next.js version
 }
 
 module.exports = nextConfig

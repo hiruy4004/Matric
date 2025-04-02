@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image" // Add this import
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { 
@@ -18,7 +19,8 @@ import {
   Clock,
   Github,
   Quote,
-  LogIn
+  LogIn,
+  ArrowRight // Add this import
 } from "lucide-react"
 
 export default function HomePage() {
@@ -58,18 +60,24 @@ export default function HomePage() {
               Interactive practice sessions designed to help you excel in Mathematics and English Grammar
             </p>
             <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              {/* Changed from /practice/math to /practice */}
-              <Link href="/practice">
-                <Button size="lg" className="group relative overflow-hidden rounded-full px-8 py-6 bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all duration-300">
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-32 h-32 bg-white/10 rounded-full blur-3xl" />
-                  </div>
-                  <span className="relative flex items-center gap-2 text-lg font-semibold">
-                    Start Math Practice
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="group relative overflow-hidden rounded-full px-8 py-6 bg-gradient-to-br from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all duration-300"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Simpler approach - just navigate directly without auth check
+                  window.location.href = '/practice/math';
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+                </div>
+                <span className="relative flex items-center gap-2 text-lg font-semibold">
+                  Start Math Practice
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Button>
+              
               <Link href="/practice/english">
                 <Button size="lg" variant="outline" className="group rounded-full px-8 py-6 border-zinc-700 hover:border-violet-500/50 hover:bg-violet-500/10 transition-all duration-300">
                   <span className="flex items-center gap-2 text-lg font-semibold">
@@ -308,15 +316,26 @@ export default function HomePage() {
                 Begin your journey to academic excellence with our adaptive learning platform
               </p>
             </div>
+            // In the Call to Action section - Math Practice Button
             <div className="flex flex-wrap gap-4">
-              <Link href="/practice/math">
-                <Button size="lg" className="group relative overflow-hidden rounded-full px-8 py-6 bg-white hover:bg-zinc-100 text-violet-600 transition-all duration-300">
-                  <span className="relative flex items-center gap-2 text-lg font-semibold">
-                    Start Math Practice
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="group relative overflow-hidden rounded-full px-8 py-6 bg-white/10 hover:bg-white/20 text-white border-white/20 transition-all duration-300"
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Direct navigation without auth manipulation
+                  window.location.href = '/practice/math';
+                }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-32 h-32 bg-white/10 rounded-full blur-3xl" />
+                </div>
+                <span className="relative flex items-center gap-2 text-lg font-semibold">
+                  Start Math Practice
+                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Button>
+              
               <Link href="/practice/english">
                 <Button size="lg" variant="outline" className="group relative overflow-hidden rounded-full px-8 py-6 bg-white/10 hover:bg-white/20 text-white border-white/20 transition-all duration-300">
                   <span className="relative flex items-center gap-2 text-lg font-semibold">

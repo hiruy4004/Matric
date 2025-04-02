@@ -1,6 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from 'react';
+// Use the supabase client that has proper error handling for client components
+import { supabase } from '@/lib/supabase';
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,17 +53,75 @@ export default function MathPracticePage() {
     return allAnswers
   }
 
-  function fetchQuestions() {
+  async function fetchQuestions() {
     try {
       setIsLoading(true)
       setError("")
-      const newQuestions = generateMathQuestions(10)
       
-      // Check if questions were generated properly
-      if (!newQuestions || newQuestions.length === 0) {
-        setError("Failed to generate questions. Please try again.")
+      // Single Supabase query
+      const { data: questions, error: queryError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('subject', 'math')
+        .limit(10);
+      
+      console.log("Supabase response:", { data: questions, error: queryError })
+      
+      if (queryError) {
+        console.error("Database error:", queryError)
+        throw new Error(`Failed to load questions: ${queryError.message}`)
+      }
+      
+      if (!questions || questions.length === 0) {
+        console.log("No questions found in database, using generated questions")
+        const generatedQuestions = generateMathQuestions(10)
+        setQuestions(generatedQuestions)
+        
+        // Pre-generate all shuffled answers for generated questions
+        const shuffledAnswers = generatedQuestions.map(q => 
+          shuffleAnswers(q.correct_answer, q.incorrect_answers)
+        )
+        setQuestionAnswers(shuffledAnswers)
+        
+        // Reset state
+        setCurrentQuestionIndex(0)
+        setScore(0)
+        setStreak(0)
+        setCorrectAnswers(0)
+        setWrongAnswers(0)
+        setShowResults(false)
+        setShowHint(false)
+        setSelectedAnswer(null)
+        setIsChecking(false)
         return
       }
+      
+      // Format Supabase questions
+      const newQuestions = questions.map(q => {
+        let incorrectAnswers = []
+        try {
+          if (Array.isArray(q.incorrect_answers)) {
+            incorrectAnswers = q.incorrect_answers
+          } else if (typeof q.incorrect_answers === 'string') {
+            // Handle escaped JSON strings
+            incorrectAnswers = JSON.parse(q.incorrect_answers.replace(/\\"/g, '"'))
+          }
+        } catch (parseError) {
+          console.error("Parsing error:", parseError)
+          incorrectAnswers = []
+        }
+
+        return {
+          id: q.id,
+          question: q.question || q.text,
+          correct_answer: q.correct_answer || q.correctAnswer,
+          incorrect_answers: incorrectAnswers,
+          difficulty: q.difficulty || 'medium',
+          grade: Number(q.grade) || 5,
+          hint: q.hint || "Think about the mathematical principles involved.",
+          subject: "math"
+        }
+      })
       
       setQuestions(newQuestions)
       
@@ -71,18 +131,29 @@ export default function MathPracticePage() {
       )
       setQuestionAnswers(shuffledAnswers)
       
+      // Reset state
       setCurrentQuestionIndex(0)
       setScore(0)
       setStreak(0)
       setCorrectAnswers(0)
       setWrongAnswers(0)
-      setShowResults(false) // Ensure this is set to false
+      setShowResults(false)
       setShowHint(false)
       setSelectedAnswer(null)
       setIsChecking(false)
     } catch (err) {
-      console.error("Error generating questions:", err)
-      setError("Failed to generate questions. Please try again.")
+      console.error("Error fetching questions:", err)
+      setError(`Failed to load questions: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      
+      // Fallback to generated questions on error
+      const generatedQuestions = generateMathQuestions(10)
+      setQuestions(generatedQuestions)
+      
+      // Pre-generate all shuffled answers
+      const shuffledAnswers = generatedQuestions.map(q => 
+        shuffleAnswers(q.correct_answer, q.incorrect_answers)
+      )
+      setQuestionAnswers(shuffledAnswers)
     } finally {
       setIsLoading(false)
     }
